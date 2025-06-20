@@ -1,0 +1,85 @@
+version: '3'
+
+vars:
+  LAYER: "" # Layer
+  STACK: "" # Stack
+
+tasks:
+  echo:
+    desc: Terraform init for the selected layer
+    dir: stacks/{{.STACK}}/layers/{{.LAYER}}
+    cmds:
+      - pwd 
+
+  init:
+    desc: Terraform init for the selected layer
+    dir: stacks/{{.STACK}}/layers/{{.LAYER}}
+    cmds:
+      - terraform init
+
+  plan:
+    desc: Terraform plan for the selected layer
+    dir: stacks/{{.STACK}}/layers/{{.LAYER}}
+    cmds:
+      - |
+        VARFILE=""
+        if [ -f layer.tfvars ]; then VARFILE="-var-file=layer.tfvars"; fi
+        terraform plan $VARFILE
+
+  apply:
+    desc: Terraform apply for the selected layer
+    dir: stacks/{{.STACK}}/layers/{{.LAYER}}
+    cmds:
+      - |
+        VARFILE=""
+        if [ -f layer.tfvars ]; then VARFILE="-var-file=layer.tfvars"; fi
+        terraform apply -auto-approve $VARFILE
+
+  destroy:
+    desc: Terraform destroy for the selected layer
+    dir: stacks/{{.STACK}}/layers/{{.LAYER}}
+    cmds:
+      - |
+        VARFILE=""
+        if [ -f layer.tfvars ]; then VARFILE="-var-file=layer.tfvars"; fi
+        terraform destroy -auto-approve $VARFILE
+
+  deploy:
+    desc: Init + Plan + Apply for a single layer
+    cmds:
+      - task: init
+        vars: { STACK: "{{.STACK}}", LAYER: "{{.LAYER}}" }
+      - task: plan
+        vars: { STACK: "{{.STACK}}", LAYER: "{{.LAYER}}" }
+      - task: apply
+        vars: { STACK: "{{.STACK}}", LAYER: "{{.LAYER}}" }
+
+  deploy:obs:
+    desc: Deploy observability stack (Grafana, Loki, Prometheus)
+    cmds:
+      - task: deploy STACK=helm LAYER=grafana
+      - task: deploy STACK=helm LAYER=loki
+      - task: deploy STACK=helm LAYER=prometheus
+
+  destroy:obs:
+    desc: Destroy observability stack
+    cmds:
+      - task: destroy STACK=helm LAYER=prometheus
+      - task: destroy STACK=helm LAYER=loki
+      - task: destroy STACK=helm LAYER=grafana
+
+  deploy:all:
+    desc: Deploy full stack (CA, Ingress, Vault etc.)
+    cmds:
+      - task: deploy STACK=base-infra LAYER=ca
+      - task: deploy STACK=helm LAYER=ingress-nginx
+      - task: deploy STACK=helm LAYER=vault
+      #- task: deploy:obs
+
+  destroy:all:
+    desc: Destroy full stack
+    cmds:
+      #- task: destroy:obs
+      - task: destroy STACK=helm LAYER=vault
+      - task: destroy STACK=helm LAYER=ingress-nginx
+      - task: destroy STACK=base-infra LAYER=ca

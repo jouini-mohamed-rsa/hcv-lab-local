@@ -1,0 +1,8 @@
+**/*.auto.tf*
+!**/cloud-envs/*.auto.tfvars
+**/.terraform*
+**/.vscode*
+**/package-lock.json
+**/*/__pycache__
+.venv
+.DS_Store
