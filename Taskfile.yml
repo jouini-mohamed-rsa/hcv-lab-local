@@ -54,32 +54,17 @@ tasks:
       - task: apply
         vars: { STACK: "{{.STACK}}", LAYER: "{{.LAYER}}" }
 
-  deploy:obs:
-    desc: Deploy observability stack (Grafana, Loki, Prometheus)
-    cmds:
-      - task: deploy STACK=helm LAYER=grafana
-      - task: deploy STACK=helm LAYER=loki
-      - task: deploy STACK=helm LAYER=prometheus
-
-  destroy:obs:
-    desc: Destroy observability stack
-    cmds:
-      - task: destroy STACK=helm LAYER=prometheus
-      - task: destroy STACK=helm LAYER=loki
-      - task: destroy STACK=helm LAYER=grafana
-
   deploy:all:
     desc: Deploy full stack (CA, Ingress, Vault etc.)
     cmds:
-      - task: deploy STACK=base-infra LAYER=ca
+      - task: deploy STACK=common LAYER=ca
       - task: deploy STACK=helm LAYER=ingress-nginx
-      - task: deploy STACK=helm LAYER=vault
-      #- task: deploy:obs
+      - task: deploy STACK=helm LAYER=vault-core
 
   destroy:all:
     desc: Destroy full stack
     cmds:
-      #- task: destroy:obs
-      - task: destroy STACK=helm LAYER=vault
+      #- task: destroy:all
+      - task: destroy STACK=helm LAYER=vault-core
       - task: destroy STACK=helm LAYER=ingress-nginx
-      - task: destroy STACK=base-infra LAYER=ca
+      - task: destroy STACK=commom LAYER=ca

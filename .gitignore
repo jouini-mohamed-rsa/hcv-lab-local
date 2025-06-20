@@ -1,8 +1,10 @@
 **/*.auto.tf*
 !**/cloud-envs/*.auto.tfvars
 **/.terraform*
+**/terraform.tfstate.*
 **/.vscode*
 **/package-lock.json
+**/vault.hclic
 **/*/__pycache__
 .venv
 .DS_Store
