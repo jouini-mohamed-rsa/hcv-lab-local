@@ -1,59 +1,158 @@
-# Certificate Authority (CA) and AWS KMS Integration for Vault
+# Common Base Layer Documentation
 
 ## Overview
 
-This document describes how the base layer provisions a Certificate Authority (CA) for Vault TLS and an AWS KMS key for Vault unsealing, depending on the configuration flags.
+The `common/layers/base` layer is the foundational infrastructure component that provisions essential resources for the Vault lab environment. It creates the core security infrastructure including a Certificate Authority (CA) for TLS certificates and AWS KMS keys for Vault unsealing.
 
 ---
 
-## 1. Certificate Authority (CA) for Vault TLS
+## Components
 
-When the variable `is_vault_tls_enabled` is set to `true`, a self-signed CA is created to sign Vault's TLS certificates.
+### 1. Server Certificate Authority (CA)
 
-- **CA Generation**:  
-  The CA is generated using the `tls_private_key` and `tls_self_signed_cert` Terraform resources.
-- **Namespace**:  
-  The CA certificate and key are stored as a Kubernetes secret (`lab-ca-tls`) in the `kube-services` namespace.
-- **Usage**:  
-  This CA is used to sign the TLS certificates for Vault, enabling secure communication.
+The layer creates a self-signed Certificate Authority that serves as the root trust anchor for all TLS certificates in the environment.
 
-**Relevant Terraform resources:**
-- `tls_private_key.lab_ca_key`
-- `tls_self_signed_cert.lab_ca_cert`
-- `kubernetes_secret.lab_ca_tls`
+#### Resources Created:
+- **TLS Private Key**: 4096-bit RSA key for the CA
+- **Self-Signed CA Certificate**: Root CA certificate with 1-year validity
+- **Kubernetes Secret**: Stores the CA certificate and private key as a TLS secret
+- **Local Files**: Saves CA certificate and key to local filesystem for client use
 
----
+#### Configuration:
+- **Subject**: Common Name: "Server Root CA", Organization: "HashiCorp", OU: "RTS"
+- **Validity**: 8760 hours (1 year) with early renewal at 720 hours
+- **Key Usage**: Certificate signing and CRL signing
+- **Storage**: Kubernetes secret `server-ca-tls` in configurable namespace (default: `kube-services`)
 
-## 2. AWS KMS Key for Vault Unsealing
+### 2. AWS KMS for Vault Unsealing
 
-When the variable `is_vault_aws_kms_enabled` is set to `true`, an AWS KMS key is provisioned for Vault's auto-unseal feature.
+When enabled, creates an AWS KMS key for Vault's auto-unseal functionality.
 
-- **KMS Key Creation**:  
-  The KMS key is created using the `aws_kms_key` resource with key rotation enabled.
-- **Alias**:  
-  An alias `alias/vault-unseal` is created for easy reference.
-- **Usage**:  
-  Vault uses this KMS key to securely unseal itself without manual intervention.
+#### Resources Created:
+- **KMS Key**: Encryption key with automatic rotation enabled
+- **KMS Alias**: Human-readable alias for the key (default: `alias/vault-unseal`)
 
-**Relevant Terraform resources:**
-- `aws_kms_key.unseal`
-- `aws_kms_alias.unseal`
+#### Configuration:
+- **Deletion Window**: 10 days
+- **Key Rotation**: Enabled
+- **Tags**: Environment metadata for resource management
 
 ---
 
-## 3. Configuration Variables
+## Variables
 
-- `is_vault_tls_enabled` (bool): Enable/disable Vault TLS and CA creation.
-- `is_vault_aws_kms_enabled` (bool): Enable/disable AWS KMS key for Vault unsealing.
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `is_kms_unseal_enabled` | bool | `false` | Enable/disable KMS key creation for Vault unsealing |
+| `kms_unseal_key_alias` | string | `"alias/vault-unseal"` | Alias for the KMS key |
+| `kubernetes_config_path` | string | `"~/.kube/config"` | Path to Kubernetes configuration file |
+| `server_ca_secret_namespace` | string | `"kube-services"` | Kubernetes namespace for CA secret |
+| `server_ca_cert_dir` | string | `"~/certifications/ca"` | Local directory for CA certificate files |
+
+**Note**: All variables can be customized by updating the `layer.tfvars` file in this directory.
 
 ---
 
-## Example
+## Configuration
 
-To enable both features, set the following variables:
+### Customizing Variables
+
+The layer uses a `layer.tfvars` file to override default variable values. You can modify this file to customize the deployment according to your environment:
+
 ```hcl
-is_vault_tls_enabled      = true
-is_vault_aws_kms_enabled = true
+# KMS Unseal Configuration
+is_kms_unseal_enabled = true
+kms_unseal_key_alias  = "alias/vault-unseal"
+
+# Kubernetes Configuration
+kubernetes_config_path = "~/.kube/config"
+
+# Server CA Configuration
+server_ca_cert_dir = "/Users/mohamed.jouini/certifications/ca"
+server_ca_secret_namespace = "kube-services"
 ```
 
-For more details, see the Terraform files in `stacks/common/layers/base/`.
+**Important**: Update the `server_ca_cert_dir` path to match your local environment where you want the CA certificates to be stored.
+
+---
+
+## Outputs
+
+| Output | Description | Sensitive |
+|--------|-------------|-----------|
+| `server_ca_cert_pem` | Public certificate for the Server CA | No |
+| `server_ca_private_key_pem` | Private key for the Server CA | Yes |
+| `unseal_key_id` | ARN of the KMS key for unsealing | No |
+
+---
+
+## Usage
+
+### Deploy the Base Layer
+
+```bash
+task deploy STACK=common LAYER=base
+```
+
+The deployment automatically uses the values from `layer.tfvars` to configure the resources.
+
+### Modifying Configuration
+
+1. Edit the `layer.tfvars` file to update variable values
+2. Redeploy using the task command above
+3. Terraform will apply the changes based on the updated configuration
+
+---
+
+## Security Considerations
+
+### Certificate Authority
+- The CA is self-signed and suitable for lab/development environments
+- For production, consider using:
+  - External CA providers
+  - step-ca for automated certificate management
+  - cert-manager with proper CA integration
+
+### KMS Key
+- Key rotation is automatically enabled
+- Deletion protection with 10-day window
+- Proper IAM permissions required for Vault to access the key
+
+---
+
+## File Structure
+
+```
+stacks/common/layers/base/
+├── server_ca.tf          # CA certificate and key generation
+├── kms.tf               # AWS KMS key for Vault unsealing
+├── variables.tf         # Input variables definition
+├── locals.tf           # Local values and tags
+├── outputs.tf          # Output values
+├── providers.tf        # Provider configurations
+└── layer.tfvars        # Variable values (customize here)
+```
+
+---
+
+## Dependencies
+
+- **Providers**: AWS provider, Kubernetes provider, TLS provider
+- **Prerequisites**: 
+  - AWS credentials configured
+  - Kubernetes cluster accessible
+  - kubectl configured with appropriate permissions
+
+---
+
+## Next Steps
+
+After deploying the base layer:
+1. The CA certificate will be available in Kubernetes for other components
+2. The KMS key can be referenced by Vault for auto-unsealing
+3. Local CA files can be used for client certificate validation
+4. Deploy the Helm layers (ingress-nginx, vault-core) that depend on these resources
+
+---
+
+For more information, see the individual Terraform files in the `stacks/common/layers/base/` directory.

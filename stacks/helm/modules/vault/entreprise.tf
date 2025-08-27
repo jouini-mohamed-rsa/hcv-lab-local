@@ -14,8 +14,7 @@ resource "kubernetes_secret" "vault_license" {
   }
 
   data = {
-    #"license.hclic" = filebase64("${path.module}/dotenv/vault.hclic")
-    "license.hclic" = file("${path.module}/dotenv/vault.hclic")
+    "license.hclic" = file(var.vault_license_file_path)
   }
 
   type = "Opaque"

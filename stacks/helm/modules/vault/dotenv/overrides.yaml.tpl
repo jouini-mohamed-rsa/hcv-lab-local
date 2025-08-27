@@ -38,6 +38,11 @@ server:
     VAULT_CACERT: /vault/userconfig/vault-tls/ca.crt
     VAULT_TLSCERT: /vault/userconfig/vault-tls/tls.crt
     VAULT_TLSKEY: /vault/userconfig/vault-tls/tls.key
+%{ if is_vault_mtls_enabled }
+    VAULT_CLIENT_CERT: /vault/clientconfig/vault-tls/tls.crt
+    VAULT_CLIENT_KEY: /vault/clientconfig/vault-tls/tls.key
+    VAULT_CACERT: /vault/clientconfig/vault-tls/ca.crt
+%{ endif }
 %{ if is_vault_aws_kms_enabled }
     AWS_SHARED_CREDENTIALS_FILE: /vault/userconfig/${vault_aws_cred_cfm}/credentials
 %{ endif }
@@ -46,12 +51,23 @@ server:
     - name: userconfig-vault-tls
       secret:
         defaultMode: 420
-        secretName: "${vault_tls_secret_name}"
+        secretName: "${vault_server_tls_secret_name}"
+%{ if is_vault_mtls_enabled }
+    - name: userconfig-vault-client-tls
+      secret:
+        defaultMode: 420
+        secretName: "${vault_client_tls_secret_name}" 
+%{ endif }
 
   volumeMounts:
     - mountPath: /vault/userconfig/vault-tls
       name: userconfig-vault-tls
       readOnly: true
+%{ if is_vault_mtls_enabled }
+    - mountPath: /vault/clientconfig/vault-tls   # new mount path for client certs
+      name: userconfig-vault-client-tls
+      readOnly: true
+%{ endif }
 %{ endif }
 
 %{ if is_vault_aws_kms_enabled }
@@ -79,12 +95,17 @@ server:
         cluster_name = "vault-integrated-storage"
         ui = true
         listener "tcp" {
-          address = "0.0.0.0:8200"
-          cluster_address = "0.0.0.0:8201"
+          address         = "[::]:8200"
+          cluster_address = "[::]:8201"
 %{ if is_vault_tls_enabled }
           tls_cert_file = "/vault/userconfig/vault-tls/tls.crt"
           tls_key_file  = "/vault/userconfig/vault-tls/tls.key"
-          tls_client_ca_file = "/vault/userconfig/vault-tls/ca.crt"
+          #tls_client_ca_file = "/vault/userconfig/vault-tls/ca.crt"
+%{ if is_vault_mtls_enabled}
+          tls_require_and_verify_client_cert = "true"
+          tls_disable_client_certs = "false"
+          tls_client_ca_file = "/vault/clientconfig/vault-tls/ca.crt"
+%{ endif }
 %{ endif }
         }
         storage "raft" {
@@ -104,6 +125,10 @@ server:
     annotations:
       |
       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+%{ if is_vault_mtls_enabled}
+      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+%{ endif }
     ingressClassName: "nginx"
     hosts:
       - host: "${vault_host}"
@@ -111,5 +136,5 @@ server:
     tls:
       - hosts:
           - "${vault_host}"
-        secretName: "${vault_tls_secret_name}"
+        secretName: "${vault_server_tls_secret_name}"
 %{ endif }

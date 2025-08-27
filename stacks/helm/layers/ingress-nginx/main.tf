@@ -10,10 +10,10 @@ module "vault" {
   helm_atomic          = true
   helm_cleanup_on_fail = true
   helm_force_update    = false
-  helm_override        = false
+  helm_override        = true
   helm_recreate_pods   = false
   helm_skip_crds       = false
-  helm_timeout         = 300
+  helm_timeout         = 600
 
   helm_metadata = {
     "globalAnnotations.product"         = "ingress-nginx"
@@ -22,4 +22,5 @@ module "vault" {
     "globalAnnotations.repository"      = "remote"
   }
   # pass other variables here as needed
+  helm_values                           = file("./dotenv/values.yaml")
 }

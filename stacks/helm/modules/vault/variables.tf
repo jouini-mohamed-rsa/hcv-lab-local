@@ -3,6 +3,11 @@ variable "is_vault_aws_kms_enabled" {
   type        = bool
 }
 
+variable "is_vault_mtls_enabled" {
+  default     = false
+  type        = bool
+}
+
 variable "is_vault_tls_enabled" {
   default     = false
   type        = bool
@@ -127,10 +132,28 @@ variable "vault_replicas" {
   type    = string
 }
 
-variable "vault_tls_secret_name" {
-  description = "Vault tls secret name"
-  default = "vault-tls"
+variable "server_tls_secret_name" {
+  description = "Server tls secret name"
+  default = "vault-server-cert"
   type    = string
+}
+
+variable "vault_client_tls_secret_name" {
+  description = "Vault tls secret name"
+  default = "vault-client-cert"
+  type    = string
+}
+
+variable "vault_client_tls_cert_dir" {
+  description = "The directory for storing the client TLS certificate"
+  default     = "~/certifications/client"
+  type        = string
+}
+
+variable "vault_license_file_path" {
+  description = "The path to the Vault license file"
+  default     = "~/license/vault.hclic"
+  type        = string
 }
 
 variable "aws_tags" {

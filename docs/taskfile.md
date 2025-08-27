@@ -10,7 +10,7 @@ This project uses a `Taskfile.yml` to automate common Terraform operations for d
 ## Common Variables
 
 - `STACK`: The stack name (e.g., `common`, `helm`).
-- `LAYER`: The layer name within the stack (e.g., `ca`, `ingress-nginx`, `vault-core`).
+- `LAYER`: The layer name within the stack (e.g., `base`, `ingress-nginx`, `vault-core`).
 
 ## Available Tasks
 
@@ -58,9 +58,9 @@ task destroy:all
 
 ## Example Usage
 
-Initialize and apply the `ca` layer in the `common` stack:
+Initialize and apply the `base` layer in the `common` stack:
 ```sh
-task deploy STACK=common LAYER=ca
+task deploy STACK=common LAYER=base
 ```
 
 Deploy all main layers:

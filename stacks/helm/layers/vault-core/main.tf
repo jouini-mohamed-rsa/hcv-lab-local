@@ -4,7 +4,10 @@ module "vault-core" {
   is_vault_affinity_enabled       = false 
   is_vault_aws_kms_enabled        = true
   is_vault_enterprise             = true
+  vault_client_tls_cert_dir       = "/Users/mohamed.jouini/training/vault/certifications/client"
   is_vault_ingress_enabled        = true
+  vault_license_file_path         = "/Users/mohamed.jouini/training/vault/license/vault.hclic"
+  is_vault_mtls_enabled           = true
   is_vault_tls_enabled            = true
   is_vault_ui_enabled             = true
 
