@@ -57,7 +57,7 @@ tasks:
   deploy:all:
     desc: Deploy full stack (CA, Ingress, Vault etc.)
     cmds:
-      - task: deploy STACK=common LAYER=ca
+      - task: deploy STACK=common LAYER=base
       - task: deploy STACK=helm LAYER=ingress-nginx
       - task: deploy STACK=helm LAYER=vault-core
 
@@ -67,4 +67,4 @@ tasks:
       #- task: destroy:all
       - task: destroy STACK=helm LAYER=vault-core
       - task: destroy STACK=helm LAYER=ingress-nginx
-      - task: destroy STACK=commom LAYER=ca
+      - task: destroy STACK=commom LAYER=base
