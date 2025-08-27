@@ -100,7 +100,7 @@ server:
 %{ if is_vault_tls_enabled }
           tls_cert_file = "/vault/userconfig/vault-tls/tls.crt"
           tls_key_file  = "/vault/userconfig/vault-tls/tls.key"
-          #tls_client_ca_file = "/vault/userconfig/vault-tls/ca.crt"
+          tls_client_ca_file = "/vault/userconfig/vault-tls/ca.crt"
 %{ if is_vault_mtls_enabled}
           tls_require_and_verify_client_cert = "true"
           tls_disable_client_certs = "false"
